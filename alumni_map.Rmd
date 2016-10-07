@@ -1,0 +1,60 @@
+---
+title: "Alumni Map"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(stringr)
+library(ggmap)
+library(leaflet)
+```
+
+```{r}
+grads <- read_csv("pgy1_grads.csv") %>%
+    filter(!is.na(first_institution))
+
+jobs <- grads$first_address %>% 
+    map_df(geocode, source = "dsk") 
+```
+
+```{r}
+library(OpenStreetMap)
+usa <- openmap(c(50, -128), c(20, -63))
+usa2 <- openproj(usa)
+# autoplot(usa2)
+# plot(usa2)
+# points(jobs)
+
+merc <- projectMercator(jobs$lat, jobs$lon)
+merc2 <- jitter(merc)
+
+png("alumni_map.png", bg = "transparent")
+
+plot(usa)
+points(merc2, pch = 21, bg = "yellow")
+
+dev.off()
+
+# autoplot(usa) +
+    # geom_jitter(aes(x=x, y=y), data=as.data.frame(merc))
+
+```
+
+
+
+```{r}
+m <- leaflet() %>%
+    addTiles() %>%
+    addMarkers(data = jobs)
+
+m
+```
+
+```{r}
+library(htmlwidgets)
+library(webshot)
+saveWidget(m, "temp.html", selfcontained = FALSE)
+webshot("temp.html", file = "alumni_map.png", cliprect = "viewport")
+```
+
